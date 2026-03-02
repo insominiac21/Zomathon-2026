@@ -1,0 +1,379 @@
+{
+  "prompts": [
+    {
+      "prompt_id": "P1_item_norm_v1",
+      "task": "item_normalization",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You are a meticulous data labeler for food delivery menus. Output must be valid JSON that matches the schema. Never add extra keys.\nUSER: Classify this menu item into a normalized category and related attributes.\nRestaurant context (optional):\n- cuisines: {cuisines}\n- restaurant_type: {restaurant_type}\n- city: {city}\nMenu item:\n- name: \"{item_name}\"\n- description: \"{item_description}\"\n- raw_category: \"{raw_category}\"\n- price: {price}\nReturn JSON:\n{\n  \"normalized_category\": \"main|side|drink|dessert|addon|combo|unknown\",\n  \"veg_flag\": \"veg|non_veg|unknown\",\n  \"portion_size\": \"single|regular|family|unknown\",\n  \"course_type\": \"meal|snack|beverage|dessert|unknown\",\n  \"ambiguity_flag\": true|false,\n  \"ambiguity_reason\": \"string (short, optional)\",\n  \"confidence\": 0.0-1.0\n}\nRules:\n- If unclear: normalized_category=\"unknown\" and ambiguity_flag=true.\n- Combo/Meal/Thali/Bucket -> combo.\n- Drinks include shakes, juices, soda, tea/coffee.\n- Addon is extra cheese/dip/sauce/toppings/add-on.\n- Side is fries/garlic bread/salad/raita/papad etc.",
+      "output_schema": "JSON keys: normalized_category, veg_flag, portion_size, course_type, ambiguity_flag, ambiguity_reason, confidence",
+      "notes": "Use with distilabel structured generation"
+    },
+    {
+      "prompt_id": "P2_pairing_tags_v1",
+      "task": "pairing_tags",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You generate pairing tags for cart add-on recommendations. Output only JSON.\nUSER:\nContext:\n- cuisines: {cuisines}\n- city: {city}\nItem:\n- name: \"{item_name}\"\n- normalized_category: \"{normalized_category}\"\n- veg_flag: \"{veg_flag}\"\n- price: {price}\nReturn JSON:\n{\n  \"pairing_tags\": [\"tag1\",\"tag2\",\"...\"],\n  \"avoid_with_tags\": [\"optional tags\"],\n  \"confidence\": 0.0-1.0\n}\nGuidelines:\n- Prefer general tags like biryani_side, burger_combo, pizza_dip, dessert_after_meal, spicy_with_cooling_side.\n- Avoid specific brands; keep tags generic.",
+      "output_schema": "JSON keys: pairing_tags, avoid_with_tags, confidence",
+      "notes": "Generate 3\u201310 tags"
+    },
+    {
+      "prompt_id": "P3_item_ontology_v1",
+      "task": "item_ontology",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You extract structured semantic attributes for menu items. Output only JSON.\nUSER:\nItem:\n- name: \"{item_name}\"\n- description: \"{item_description}\"\n- normalized_category: \"{normalized_category}\"\n- cuisines: {cuisines}\nReturn JSON:\n{\n  \"flavor_profile\": [\"sweet|savory|spicy|tangy|creamy|fried|grilled|baked|cooling|unknown\"],\n  \"spice_level\": \"none|low|medium|high|unknown\",\n  \"consumption_context\": \"meal|snack|beverage|dessert|unknown\",\n  \"temperature_served\": \"hot|cold|room|unknown\",\n  \"dietary_notes\": [\"contains_dairy\",\"contains_gluten\",\"contains_egg\",\"unknown\"],\n  \"confidence\": 0.0-1.0\n}",
+      "output_schema": "JSON keys: flavor_profile, spice_level, consumption_context, temperature_served, dietary_notes, confidence",
+      "notes": "Use unknowns when uncertain"
+    },
+    {
+      "prompt_id": "J1_judge_category_v1",
+      "task": "judge_category",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You are a strict evaluator. Return only JSON.\nUSER:\nEvaluate whether the normalized_category is correct.\nItem:\n- name: \"{item_name}\"\n- description: \"{item_description}\"\n- raw_category: \"{raw_category}\"\nProposed:\n- normalized_category: \"{normalized_category}\"\nReturn JSON:\n{ \"score\": 0.0-1.0, \"pass\": true|false, \"reason\": \"one sentence\" }\nPass if score >= 0.75.",
+      "output_schema": "JSON keys: score, pass, reason",
+      "notes": "Use with DeepEval"
+    },
+    {
+      "prompt_id": "J2_judge_pairing_v1",
+      "task": "judge_pairing",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You are a strict evaluator for add-on recommendation features. Output only JSON.\nUSER:\nAre these pairing tags plausible and useful?\nItem:\n- name: \"{item_name}\"\n- normalized_category: \"{normalized_category}\"\nPairing tags:\n{pairing_tags}\nReturn JSON:\n{ \"score\": 0.0-1.0, \"pass\": true|false, \"reason\": \"one sentence\", \"bad_tags\": [\"optional\"] }\nPass if score >= 0.70.",
+      "output_schema": "JSON keys: score, pass, reason, bad_tags",
+      "notes": "Use with DeepEval"
+    },
+    {
+      "prompt_id": "F1_filter_low_quality_v1",
+      "task": "filter_low_quality",
+      "version": "v1",
+      "prompt_text": "SYSTEM: You are filtering low-quality synthetic annotations. Output only JSON.\nUSER:\nDecide keep/reject.\nItem:\n- name: \"{item_name}\"\n- description: \"{item_description}\"\nOutputs:\n- normalized_category: \"{normalized_category}\"\n- veg_flag: \"{veg_flag}\"\n- pairing_tags: {pairing_tags}\n- confidence: {confidence}\nReturn JSON:\n{ \"keep\": true|false, \"reason\": \"short\", \"action\": \"accept|regenerate|send_to_human\" }",
+      "output_schema": "JSON keys: keep, reason, action",
+      "notes": "Optional filtering stage"
+    }
+  ],
+  "validation_rules": [
+    {
+      "rule_id": "R1",
+      "severity": "ERROR",
+      "description": "Enums must be valid (normalized_category, veg_flag, event_type, etc.)",
+      "applies_to_table": "all",
+      "suggested_check": "Rule-based enum membership"
+    },
+    {
+      "rule_id": "R2",
+      "severity": "ERROR",
+      "description": "Timestamps must be monotonic within each session",
+      "applies_to_table": "cart_events",
+      "suggested_check": "Sort by event_ts, check non-decreasing"
+    },
+    {
+      "rule_id": "R3",
+      "severity": "ERROR",
+      "description": "remove_item must reference an item previously added in the session",
+      "applies_to_table": "cart_events",
+      "suggested_check": "Maintain cart state per session"
+    },
+    {
+      "rule_id": "R4",
+      "severity": "WARN",
+      "description": "High missingness beyond configured rates",
+      "applies_to_table": "menu_items",
+      "suggested_check": "Compare missing rates to config"
+    },
+    {
+      "rule_id": "R5",
+      "severity": "WARN",
+      "description": "Cart size distribution drift vs spec",
+      "applies_to_table": "sessions/cart_events",
+      "suggested_check": "Compare histogram to target weights"
+    },
+    {
+      "rule_id": "R6",
+      "severity": "WARN",
+      "description": "Exposure top_k must match config",
+      "applies_to_table": "reco_exposures",
+      "suggested_check": "candidate_rank <= top_k"
+    },
+    {
+      "rule_id": "R7",
+      "severity": "WARN",
+      "description": "Cold-start slices present in TEST split",
+      "applies_to_table": "splits",
+      "suggested_check": "Counts by new_users/new_items/new_restaurants"
+    }
+  ],
+  "qa_sampling_plan": [
+    {
+      "sample_group": "high_traffic_items",
+      "target_count": 800,
+      "selection_logic": "Top items by simulated popularity",
+      "notes": "Business-critical"
+    },
+    {
+      "sample_group": "long_tail_items",
+      "target_count": 700,
+      "selection_logic": "Random from bottom 70% popularity",
+      "notes": "Improve coverage"
+    },
+    {
+      "sample_group": "ambiguous_items",
+      "target_count": 700,
+      "selection_logic": "LLM ambiguity_flag=true OR missing raw_category",
+      "notes": "Hard cases"
+    },
+    {
+      "sample_group": "deepeval_borderline",
+      "target_count": 500,
+      "selection_logic": "DeepEval score between 0.40 and 0.80",
+      "notes": "Human review band"
+    },
+    {
+      "sample_group": "random_control",
+      "target_count": 300,
+      "selection_logic": "Uniform random sample",
+      "notes": "Estimate overall error"
+    }
+  ],
+  "enums_detailed": {
+    "normalized_category": [
+      {
+        "value": "main",
+        "description": "Core dish / entree"
+      },
+      {
+        "value": "side",
+        "description": "Side dish (fries, raita, garlic bread, etc.)"
+      },
+      {
+        "value": "drink",
+        "description": "Beverage (tea/coffee/soda/shake/juice)"
+      },
+      {
+        "value": "dessert",
+        "description": "Sweet dish/dessert"
+      },
+      {
+        "value": "addon",
+        "description": "Extra/topping/dip/sauce/add-on"
+      },
+      {
+        "value": "combo",
+        "description": "Meal/combo/thali/bucket"
+      },
+      {
+        "value": "unknown",
+        "description": "Unclear / needs review"
+      }
+    ],
+    "veg_flag": [
+      {
+        "value": "veg",
+        "description": "Vegetarian"
+      },
+      {
+        "value": "non_veg",
+        "description": "Non-vegetarian"
+      },
+      {
+        "value": "unknown",
+        "description": "Unclear"
+      }
+    ],
+    "portion_size": [
+      {
+        "value": "single",
+        "description": "Single serving"
+      },
+      {
+        "value": "regular",
+        "description": "Regular"
+      },
+      {
+        "value": "family",
+        "description": "Family/large"
+      },
+      {
+        "value": "unknown",
+        "description": "Unclear"
+      }
+    ],
+    "course_type": [
+      {
+        "value": "meal",
+        "description": "Meal"
+      },
+      {
+        "value": "snack",
+        "description": "Snack"
+      },
+      {
+        "value": "beverage",
+        "description": "Beverage"
+      },
+      {
+        "value": "dessert",
+        "description": "Dessert"
+      },
+      {
+        "value": "unknown",
+        "description": "Unclear"
+      }
+    ],
+    "meal_slot": [
+      {
+        "value": "breakfast",
+        "description": "Morning"
+      },
+      {
+        "value": "lunch",
+        "description": "Midday"
+      },
+      {
+        "value": "snack",
+        "description": "Evening snack"
+      },
+      {
+        "value": "dinner",
+        "description": "Night meal"
+      },
+      {
+        "value": "late_night",
+        "description": "Late night"
+      }
+    ],
+    "offer_context": [
+      {
+        "value": "none",
+        "description": "No offer"
+      },
+      {
+        "value": "flat_off",
+        "description": "Flat discount"
+      },
+      {
+        "value": "percent_off",
+        "description": "Percent discount"
+      },
+      {
+        "value": "free_delivery",
+        "description": "Free delivery"
+      }
+    ],
+    "session_outcome": [
+      {
+        "value": "ordered",
+        "description": "Checkout completed"
+      },
+      {
+        "value": "abandoned",
+        "description": "No checkout"
+      }
+    ],
+    "event_type": [
+      {
+        "value": "view_menu",
+        "description": "Viewed menu"
+      },
+      {
+        "value": "add_item",
+        "description": "Added item"
+      },
+      {
+        "value": "remove_item",
+        "description": "Removed item"
+      },
+      {
+        "value": "qty_change",
+        "description": "Changed quantity"
+      },
+      {
+        "value": "checkout",
+        "description": "Checkout"
+      },
+      {
+        "value": "abandon",
+        "description": "Abandoned"
+      }
+    ],
+    "user_segment": [
+      {
+        "value": "budget",
+        "description": "Price-sensitive"
+      },
+      {
+        "value": "office_lunch",
+        "description": "Weekday lunch routine"
+      },
+      {
+        "value": "family",
+        "description": "Weekend / larger carts"
+      },
+      {
+        "value": "premium",
+        "description": "Higher spend"
+      },
+      {
+        "value": "late_night",
+        "description": "Night snack"
+      },
+      {
+        "value": "student",
+        "description": "Budget + fast food bias"
+      }
+    ],
+    "day_type": [
+      {
+        "value": "weekday",
+        "description": "Mon\u2013Fri combined"
+      },
+      {
+        "value": "weekend",
+        "description": "Sat\u2013Sun combined"
+      }
+    ],
+    "exposure_candidate_source": [
+      {
+        "value": "popularity",
+        "description": "Popularity-based candidate"
+      },
+      {
+        "value": "cooccurrence_proxy",
+        "description": "Co-occurrence / Apriori-like proxy"
+      },
+      {
+        "value": "content_proxy",
+        "description": "Content/semantic proxy"
+      },
+      {
+        "value": "random_noise",
+        "description": "Random noise for realism"
+      }
+    ],
+    "user_history_band": [
+      {
+        "value": "sessions_1_to_3",
+        "description": "Sparse users (1\u20133 sessions)"
+      },
+      {
+        "value": "sessions_4_to_10",
+        "description": "Moderate users (4\u201310 sessions)"
+      },
+      {
+        "value": "sessions_gt_10",
+        "description": "Heavy users (>10 sessions)"
+      }
+    ],
+    "veg_pref_bucket": [
+      {
+        "value": "veg_leaning",
+        "description": "Higher veg probability"
+      },
+      {
+        "value": "mixed",
+        "description": "No strong preference"
+      },
+      {
+        "value": "nonveg_leaning",
+        "description": "Lower veg probability"
+      }
+    ]
+  }
+}

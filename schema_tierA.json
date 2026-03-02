@@ -1,0 +1,592 @@
+{
+  "restaurants": {
+    "sheet": "10_SCHEMA_restaurants",
+    "columns": [
+      {
+        "name": "restaurant_id",
+        "type": "string",
+        "required": true,
+        "example": "R_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "restaurant_name",
+        "type": "string",
+        "required": false,
+        "example": "Spice Hub",
+        "rule": "optional",
+        "notes": "May be anonymized"
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "required": true,
+        "example": "city_1",
+        "rule": "from city_weight",
+        "notes": "Synthetic city bucket"
+      },
+      {
+        "name": "zone",
+        "type": "string",
+        "required": true,
+        "example": "zone_12",
+        "rule": "city-specific",
+        "notes": "Coarse locality bucket"
+      },
+      {
+        "name": "cuisine_tags",
+        "type": "string",
+        "required": true,
+        "example": "North Indian;Chinese",
+        "rule": "semicolon-separated",
+        "notes": "Multi-label"
+      },
+      {
+        "name": "price_band",
+        "type": "int",
+        "required": true,
+        "example": 2,
+        "rule": "1\u20134",
+        "notes": "Restaurant price band"
+      },
+      {
+        "name": "avg_rating",
+        "type": "float",
+        "required": false,
+        "example": 4.1,
+        "rule": "0\u20135",
+        "notes": "Missing for some new restaurants"
+      },
+      {
+        "name": "rating_count_bucket",
+        "type": "string",
+        "required": false,
+        "example": "100-500",
+        "rule": "buckets",
+        "notes": "Optional"
+      },
+      {
+        "name": "pure_veg_flag",
+        "type": "bool",
+        "required": false,
+        "example": false,
+        "rule": "true/false",
+        "notes": "Optional"
+      },
+      {
+        "name": "chain_flag",
+        "type": "bool",
+        "required": false,
+        "example": false,
+        "rule": "true/false",
+        "notes": "Optional"
+      },
+      {
+        "name": "is_active",
+        "type": "bool",
+        "required": true,
+        "example": true,
+        "rule": "true/false",
+        "notes": "Simulate churn"
+      },
+      {
+        "name": "created_at",
+        "type": "date",
+        "required": true,
+        "example": "2025-10-01",
+        "rule": "within horizon",
+        "notes": "For churn/cold start"
+      }
+    ]
+  },
+  "menu_items": {
+    "sheet": "11_SCHEMA_menu_items",
+    "columns": [
+      {
+        "name": "item_id",
+        "type": "string",
+        "required": true,
+        "example": "I_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "string",
+        "required": true,
+        "example": "R_000001",
+        "rule": "FK restaurants",
+        "notes": null
+      },
+      {
+        "name": "item_name",
+        "type": "string",
+        "required": true,
+        "example": "Chicken Biryani",
+        "rule": "text",
+        "notes": "Keep spelling noise"
+      },
+      {
+        "name": "item_description",
+        "type": "string",
+        "required": false,
+        "example": "Aromatic rice with spices",
+        "rule": "missingness injected",
+        "notes": "Often missing"
+      },
+      {
+        "name": "raw_category",
+        "type": "string",
+        "required": false,
+        "example": "Biryani",
+        "rule": "noisy",
+        "notes": "From source or missing"
+      },
+      {
+        "name": "normalized_category",
+        "type": "string",
+        "required": false,
+        "example": "main",
+        "rule": "enum normalized_category",
+        "notes": "Filled by LLM / rules"
+      },
+      {
+        "name": "veg_flag",
+        "type": "string",
+        "required": false,
+        "example": "non_veg",
+        "rule": "enum veg_flag",
+        "notes": "Filled by LLM / rules"
+      },
+      {
+        "name": "portion_size",
+        "type": "string",
+        "required": false,
+        "example": "regular",
+        "rule": "enum portion_size",
+        "notes": "Filled by LLM / rules"
+      },
+      {
+        "name": "course_type",
+        "type": "string",
+        "required": false,
+        "example": "meal",
+        "rule": "enum course_type",
+        "notes": "Filled by LLM / rules"
+      },
+      {
+        "name": "cuisine_tags",
+        "type": "string",
+        "required": false,
+        "example": "North Indian",
+        "rule": "optional",
+        "notes": "Derived from restaurant"
+      },
+      {
+        "name": "price",
+        "type": "float",
+        "required": true,
+        "example": 249,
+        "rule": ">0",
+        "notes": "May vary with churn"
+      },
+      {
+        "name": "availability_prob",
+        "type": "float",
+        "required": true,
+        "example": 0.92,
+        "rule": "0\u20131",
+        "notes": "Out-of-stock simulation"
+      },
+      {
+        "name": "is_bestseller",
+        "type": "bool",
+        "required": false,
+        "example": true,
+        "rule": "true/false",
+        "notes": "Popularity proxy"
+      },
+      {
+        "name": "created_at",
+        "type": "date",
+        "required": true,
+        "example": "2025-10-10",
+        "rule": "within horizon",
+        "notes": "For cold start"
+      },
+      {
+        "name": "is_active",
+        "type": "bool",
+        "required": true,
+        "example": true,
+        "rule": "true/false",
+        "notes": "Churn"
+      }
+    ]
+  },
+  "users": {
+    "sheet": "12_SCHEMA_users",
+    "columns": [
+      {
+        "name": "user_id",
+        "type": "string",
+        "required": true,
+        "example": "U_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "home_city",
+        "type": "string",
+        "required": true,
+        "example": "city_3",
+        "rule": "from city_weight",
+        "notes": null
+      },
+      {
+        "name": "home_zone",
+        "type": "string",
+        "required": true,
+        "example": "zone_07",
+        "rule": "city-specific",
+        "notes": null
+      },
+      {
+        "name": "user_segment",
+        "type": "string",
+        "required": true,
+        "example": "budget",
+        "rule": "enum user_segment",
+        "notes": null
+      },
+      {
+        "name": "price_sensitivity_score",
+        "type": "float",
+        "required": true,
+        "example": 0.78,
+        "rule": "0\u20131",
+        "notes": "Higher => rejects add-ons more"
+      },
+      {
+        "name": "novelty_preference_score",
+        "type": "float",
+        "required": true,
+        "example": 0.35,
+        "rule": "0\u20131",
+        "notes": "Higher => diverse carts"
+      },
+      {
+        "name": "veg_pref_bucket",
+        "type": "string",
+        "required": true,
+        "example": "mixed",
+        "rule": "veg_pref buckets",
+        "notes": "Maps to veg prob"
+      },
+      {
+        "name": "order_frequency_band",
+        "type": "string",
+        "required": true,
+        "example": "sessions_1_to_3",
+        "rule": "user_history_band",
+        "notes": "Sparsity target"
+      },
+      {
+        "name": "signup_cohort_month",
+        "type": "string",
+        "required": true,
+        "example": "2025-11",
+        "rule": "YYYY-MM",
+        "notes": null
+      },
+      {
+        "name": "is_active",
+        "type": "bool",
+        "required": true,
+        "example": true,
+        "rule": "true/false",
+        "notes": "Churn"
+      }
+    ]
+  },
+  "sessions": {
+    "sheet": "13_SCHEMA_sessions",
+    "columns": [
+      {
+        "name": "session_id",
+        "type": "string",
+        "required": true,
+        "example": "S_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "required": true,
+        "example": "U_000001",
+        "rule": "FK users",
+        "notes": null
+      },
+      {
+        "name": "restaurant_id",
+        "type": "string",
+        "required": true,
+        "example": "R_000123",
+        "rule": "FK restaurants",
+        "notes": null
+      },
+      {
+        "name": "city",
+        "type": "string",
+        "required": true,
+        "example": "city_1",
+        "rule": "from restaurant",
+        "notes": "Denormalized"
+      },
+      {
+        "name": "zone",
+        "type": "string",
+        "required": true,
+        "example": "zone_12",
+        "rule": "from restaurant",
+        "notes": "Denormalized"
+      },
+      {
+        "name": "session_start_ts",
+        "type": "datetime",
+        "required": true,
+        "example": "2026-01-05 20:10",
+        "rule": "within horizon",
+        "notes": "Timezone Asia/Kolkata"
+      },
+      {
+        "name": "meal_slot",
+        "type": "string",
+        "required": true,
+        "example": "dinner",
+        "rule": "enum meal_slot",
+        "notes": null
+      },
+      {
+        "name": "day_type",
+        "type": "string",
+        "required": true,
+        "example": "weekday",
+        "rule": "weekday/weekend",
+        "notes": null
+      },
+      {
+        "name": "offer_context",
+        "type": "string",
+        "required": true,
+        "example": "none",
+        "rule": "enum offer_context",
+        "notes": null
+      },
+      {
+        "name": "session_outcome",
+        "type": "string",
+        "required": true,
+        "example": "ordered",
+        "rule": "enum session_outcome",
+        "notes": null
+      },
+      {
+        "name": "order_total",
+        "type": "float",
+        "required": false,
+        "example": 623,
+        "rule": ">=0",
+        "notes": "Only if ordered"
+      }
+    ]
+  },
+  "cart_events": {
+    "sheet": "14_SCHEMA_cart_events",
+    "columns": [
+      {
+        "name": "event_id",
+        "type": "string",
+        "required": true,
+        "example": "E_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "required": true,
+        "example": "S_000001",
+        "rule": "FK sessions",
+        "notes": null
+      },
+      {
+        "name": "event_ts",
+        "type": "datetime",
+        "required": true,
+        "example": "2026-01-05 20:11",
+        "rule": "monotonic per session",
+        "notes": null
+      },
+      {
+        "name": "event_type",
+        "type": "string",
+        "required": true,
+        "example": "add_item",
+        "rule": "enum event_type",
+        "notes": null
+      },
+      {
+        "name": "item_id",
+        "type": "string",
+        "required": false,
+        "example": "I_000045",
+        "rule": "FK menu_items",
+        "notes": "Nullable for view_menu/checkout/abandon"
+      },
+      {
+        "name": "qty",
+        "type": "int",
+        "required": false,
+        "example": 1,
+        "rule": ">=1 if item event",
+        "notes": null
+      },
+      {
+        "name": "add_order_index",
+        "type": "int",
+        "required": false,
+        "example": 2,
+        "rule": ">=1",
+        "notes": "Only for add_item"
+      },
+      {
+        "name": "cart_value_before",
+        "type": "float",
+        "required": true,
+        "example": 249,
+        "rule": ">=0",
+        "notes": null
+      },
+      {
+        "name": "cart_value_after",
+        "type": "float",
+        "required": true,
+        "example": 498,
+        "rule": ">=0",
+        "notes": null
+      },
+      {
+        "name": "cart_size_before",
+        "type": "int",
+        "required": true,
+        "example": 1,
+        "rule": ">=0",
+        "notes": null
+      },
+      {
+        "name": "cart_size_after",
+        "type": "int",
+        "required": true,
+        "example": 2,
+        "rule": ">=0",
+        "notes": null
+      }
+    ]
+  },
+  "reco_exposures": {
+    "sheet": "15_SCHEMA_reco_exposures",
+    "columns": [
+      {
+        "name": "exposure_id",
+        "type": "string",
+        "required": true,
+        "example": "X_000001",
+        "rule": "unique",
+        "notes": "Primary key"
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "required": true,
+        "example": "S_000001",
+        "rule": "FK sessions",
+        "notes": null
+      },
+      {
+        "name": "event_id",
+        "type": "string",
+        "required": true,
+        "example": "E_000010",
+        "rule": "FK cart_events",
+        "notes": "Cart state where rail shown"
+      },
+      {
+        "name": "prefix_step",
+        "type": "int",
+        "required": true,
+        "example": 3,
+        "rule": ">=0",
+        "notes": "Cart step"
+      },
+      {
+        "name": "candidate_rank",
+        "type": "int",
+        "required": true,
+        "example": 1,
+        "rule": "1..top_k",
+        "notes": null
+      },
+      {
+        "name": "candidate_item_id",
+        "type": "string",
+        "required": true,
+        "example": "I_000100",
+        "rule": "FK menu_items",
+        "notes": null
+      },
+      {
+        "name": "candidate_score",
+        "type": "float",
+        "required": true,
+        "example": 0.42,
+        "rule": "0\u20131",
+        "notes": "Simulated score"
+      },
+      {
+        "name": "source",
+        "type": "string",
+        "required": true,
+        "example": "popularity",
+        "rule": "source buckets",
+        "notes": "popularity/cooccurrence_proxy/content_proxy/random_noise"
+      },
+      {
+        "name": "was_clicked",
+        "type": "bool",
+        "required": false,
+        "example": false,
+        "rule": "true/false",
+        "notes": "Optional"
+      },
+      {
+        "name": "was_added_within_n_steps",
+        "type": "bool",
+        "required": true,
+        "example": false,
+        "rule": "true/false",
+        "notes": "Label proxy"
+      },
+      {
+        "name": "was_added_in_session",
+        "type": "bool",
+        "required": true,
+        "example": true,
+        "rule": "true/false",
+        "notes": "Label proxy"
+      }
+    ]
+  }
+}

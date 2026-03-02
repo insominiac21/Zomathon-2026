@@ -1,0 +1,273 @@
+project:
+  name: zomathon_cart_dataset
+  dataset_version: v0.1-pilot
+  tier: A
+  seed: 42
+  timezone: Asia/Kolkata
+time_split:
+  horizon_days: 120
+  train_end_day: 90
+  val_end_day: 105
+  test_end_day: 120
+targets:
+  restaurants: 1500
+  menu_items: 25000
+  users: 40000
+  sessions: 80000
+  est_cart_events: 371150
+  est_exposures_min: 2711854
+  est_exposures_max: 2711854
+  sample_rows_per_table_for_sheet: 500
+generation:
+  top_k_exposures: 10
+  target_cities_count: 8
+  city_volume_distribution_type: heavy_tail
+  meal_slot_distribution_type: fixed_weighted
+  session_outcome_distribution_type: fixed_weighted
+  cart_size_distribution_type: fixed_weighted
+  user_history_distribution_type: fixed_weighted
+  menu_min_items_per_restaurant: 8
+  menu_max_items_per_restaurant: 250
+  preserve_spelling_noise: true
+  preserve_duplicate_like_names: true
+  abandonment_rate_base: 0.22
+  remove_event_prob_base: 0.08
+  qty_change_event_prob_base: 0.05
+missingness:
+  item_description_missing_rate: 0.35
+  raw_category_missing_rate: 0.08
+exposures:
+  enabled: true
+  show_after_events:
+  - add_item
+  - view_menu
+  candidate_mix:
+    popularity: 0.35
+    cooccurrence_proxy: 0.35
+    content_proxy: 0.2
+    random_noise: 0.1
+quality_pipeline:
+  llm_enrichment_enabled: true
+  deepeval_enabled: true
+  label_studio_enabled: true
+output:
+  parquet_output: true
+  csv_output_small_samples: true
+distributions:
+  city_weight:
+  - bucket: city_1
+    weight: 0.22
+    notes: highest traffic
+  - bucket: city_2
+    weight: 0.18
+  - bucket: city_3
+    weight: 0.15
+  - bucket: city_4
+    weight: 0.12
+  - bucket: city_5
+    weight: 0.1
+  - bucket: city_6
+    weight: 0.08
+  - bucket: city_7
+    weight: 0.08
+  - bucket: city_8
+    weight: 0.07
+    notes: long tail
+  meal_slot_weight:
+  - bucket: breakfast
+    weight: 0.1
+  - bucket: lunch
+    weight: 0.28
+    notes: office/weekday peak
+  - bucket: snack
+    weight: 0.14
+  - bucket: dinner
+    weight: 0.36
+    notes: highest
+  - bucket: late_night
+    weight: 0.12
+    notes: snack/fast-food bias
+  day_type_weight:
+  - bucket: weekday
+    weight: 0.72
+    notes: Mon–Fri combined
+  - bucket: weekend
+    weight: 0.28
+    notes: Sat–Sun combined
+  session_outcome_weight:
+  - bucket: ordered
+    weight: 0.78
+    notes: final checkout
+  - bucket: abandoned
+    weight: 0.22
+    notes: no checkout
+  final_cart_size_weight:
+  - bucket: '1'
+    weight: 0.38
+    notes: single-item carts common
+  - bucket: '2'
+    weight: 0.27
+  - bucket: '3'
+    weight: 0.16
+  - bucket: '4'
+    weight: 0.09
+  - bucket: '5'
+    weight: 0.05
+  - bucket: 6_plus
+    weight: 0.05
+    notes: family / weekend
+  user_history_band_weight:
+  - bucket: sessions_1_to_3
+    weight: 0.7
+    notes: sparse users
+  - bucket: sessions_4_to_10
+    weight: 0.25
+    notes: moderate
+  - bucket: sessions_gt_10
+    weight: 0.05
+    notes: heavy users
+  user_segment_weight:
+  - bucket: budget
+    weight: 0.28
+    notes: price-sensitive
+  - bucket: office_lunch
+    weight: 0.2
+    notes: weekday lunch repeaters
+  - bucket: family
+    weight: 0.16
+    notes: weekend larger carts
+  - bucket: premium
+    weight: 0.1
+    notes: higher AOV
+  - bucket: late_night
+    weight: 0.12
+    notes: night snackers
+  - bucket: student
+    weight: 0.14
+    notes: budget + fast food bias
+  restaurant_price_band_weight:
+  - bucket: '1'
+    weight: 0.25
+    notes: low-cost
+  - bucket: '2'
+    weight: 0.4
+    notes: largest share
+  - bucket: '3'
+    weight: 0.25
+  - bucket: '4'
+    weight: 0.1
+    notes: premium
+  offer_context_weight:
+  - bucket: none
+    weight: 0.55
+    notes: most sessions
+  - bucket: flat_off
+    weight: 0.15
+  - bucket: percent_off
+    weight: 0.2
+  - bucket: free_delivery
+    weight: 0.1
+  exposure_candidate_source_weight:
+  - bucket: popularity
+    weight: 0.35
+    notes: simple baseline
+  - bucket: cooccurrence_proxy
+    weight: 0.35
+    notes: Apriori-like proxy
+  - bucket: content_proxy
+    weight: 0.2
+    notes: semantic fallback
+  - bucket: random_noise
+    weight: 0.1
+    notes: realism/noise
+  cold_start_test_target_weight:
+  - bucket: new_users
+    weight: 0.35
+    notes: user cold-start slice
+  - bucket: new_items
+    weight: 0.1
+    notes: item cold-start slice
+  - bucket: new_restaurants
+    weight: 0.05
+    notes: restaurant cold-start slice
+  - bucket: seen_entities
+    weight: 0.5
+    notes: normal traffic
+  user_veg_pref_bucket_weight:
+  - bucket: veg_leaning
+    weight: 0.32
+    notes: higher veg probability
+  - bucket: mixed
+    weight: 0.56
+    notes: no strong preference
+  - bucket: nonveg_leaning
+    weight: 0.12
+    notes: lower veg probability
+enums:
+  normalized_category:
+  - main
+  - side
+  - drink
+  - dessert
+  - addon
+  - combo
+  - unknown
+  veg_flag:
+  - veg
+  - non_veg
+  - unknown
+  portion_size:
+  - single
+  - regular
+  - family
+  - unknown
+  course_type:
+  - meal
+  - snack
+  - beverage
+  - dessert
+  - unknown
+  meal_slot:
+  - breakfast
+  - lunch
+  - snack
+  - dinner
+  - late_night
+  offer_context:
+  - none
+  - flat_off
+  - percent_off
+  - free_delivery
+  session_outcome:
+  - ordered
+  - abandoned
+  event_type:
+  - view_menu
+  - add_item
+  - remove_item
+  - qty_change
+  - checkout
+  - abandon
+  user_segment:
+  - budget
+  - office_lunch
+  - family
+  - premium
+  - late_night
+  - student
+  day_type:
+  - weekday
+  - weekend
+  exposure_candidate_source:
+  - popularity
+  - cooccurrence_proxy
+  - content_proxy
+  - random_noise
+  user_history_band:
+  - sessions_1_to_3
+  - sessions_4_to_10
+  - sessions_gt_10
+  veg_pref_bucket:
+  - veg_leaning
+  - mixed
+  - nonveg_leaning
