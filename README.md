@@ -1,6 +1,6 @@
 # Zomathon Tier A Generator README
 
-This folder contains the starter generator for the Tier A cart dataset pilot. The current generator is a rule-based synthetic data builder that uses a seeded random number generator, weighted distributions, and a few hardcoded business rules to produce realistic-looking tables.
+This repo contains the starter generator for the Tier A cart dataset pilot. The current generator is a rule-based synthetic data builder that uses a seeded random number generator, weighted distributions, and a few hardcoded business rules to produce realistic-looking tables.
 
 ## What this folder is for
 
